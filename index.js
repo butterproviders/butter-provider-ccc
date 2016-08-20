@@ -1,6 +1,6 @@
 'use strict';
 
-var GenericProvider = require('butter-provider');
+var Generic = require('butter-provider');
 var querystring = require('querystring');
 var request = require('request');
 var Q = require('q');
@@ -17,13 +17,13 @@ var CCC = function (args) {
         URL = args.url;
 };
 
-inherits(CCC, GenericProvider);
+inherits(CCC, Generic);
 
 CCC.prototype.config = {
     name: 'ccc',
     uniqueId: 'imdb_id',
     tabName: 'CCC',
-    type: 'tvshow',
+    type: Generic.TabType.TVSHOW
 };
 
 var queryTorrents = function (filters) {

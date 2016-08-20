@@ -2,7 +2,6 @@
 
 var Generic = require('butter-provider');
 var querystring = require('querystring');
-var request = require('request');
 var Q = require('q');
 var deferRequest = require('defer-request');
 var inherits = require('util').inherits;

@@ -73,11 +73,8 @@ var formatElementForButter = function (data) {
         tvdb_id: 'ccc-' + data.acronym,
         title: data.title,
         year: year,
-        images: {
-            banner: img,
-            fanart: img,
-            poster: img,
-        },
+        poster: img,
+        backdrop: img,
         slug: data.slug,
         rating: {
             hated: 0,

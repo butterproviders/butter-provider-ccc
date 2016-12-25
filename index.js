@@ -1,6 +1,6 @@
 'use strict';
 
-var Generic = require('butter-provider');
+var Provider = require('butter-provider');
 var querystring = require('querystring');
 var Q = require('q');
 var deferRequest = require('defer-request');
@@ -16,13 +16,12 @@ var CCC = function (args) {
         URL = args.url;
 };
 
-inherits(CCC, Generic);
+inherits(CCC, Provider);
 
 CCC.prototype.config = {
     name: 'ccc',
     uniqueId: 'imdb_id',
-    tabName: 'CCC',
-    type: Generic.TabType.TVSHOW
+    tabName: 'CCC'
 };
 
 var queryTorrents = function (filters) {
@@ -67,7 +66,7 @@ var formatElementForButter = function (data) {
     var year = updated.year();
     var img = data.logo_url;
     return {
-        type: 'show',
+        type: Provider.ItemType.TVSHOW,
         _id: id,
         imdb_id: 'ccc' +id,
         tvdb_id: 'ccc-' + data.acronym,

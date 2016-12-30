@@ -65,96 +65,145 @@ var formatElementForButter = function (data) {
     var updated = moment(data.updated_at);
     var year = updated.year();
     var img = data.logo_url;
-    return {
-        type: Provider.ItemType.TVSHOW,
-        _id: id,
-        imdb_id: 'ccc' +id,
-        tvdb_id: 'ccc-' + data.acronym,
-        title: data.title,
-        year: year,
-        poster: img,
-        backdrop: img,
-        slug: data.slug,
-        rating: {
-            hated: 0,
-            loved: 0,
-            votes: 0,
-            percentage: 0,
-            watching: 0
-        },
-        num_seasons: 4,
-        last_updated: updated.unix()
-    }
+    return deferRequest(data.url)
+        .then(function (conf) {
+            var days = {}
+
+            var events = conf.events.map(function (event) {
+                var day = getEventDate(event);
+                days[day] = 1;
+                return Object.assign({}, event, {
+                    first_aired: moment(event.date).unix(),
+                    day: day
+                } )
+            });
+
+            days = Object.keys(days);
+            return {
+                type: Provider.ItemType.TVSHOW,
+                _id: id,
+                imdb_id: 'ccc' +id,
+                tvdb_id: 'ccc-' + data.acronym,
+                title: data.title,
+                genres: ["Event", "Conference"],
+                year: year,
+                poster: img,
+                backdrop: img,
+                slug: data.slug,
+                rating: {
+                    hated: 0,
+                    loved: 0,
+                    votes: 0,
+                    percentage: 0,
+                    watching: 0
+                },
+                num_seasons: days.length,
+                days: days,
+                raw_events: events,
+                last_updated: updated.unix()
+            }
+        })
 };
 
 var formatForButter = function(data) {
     if (!data) return Q.reject("No Data !");
 
-    return {
-        results: data.map(formatElementForButter).reverse(),
-        hasMore: true
+    return Q.all(data.map(formatElementForButter))
+        .then(function (results) {
+            return {
+                results: results,
+                hasMore: true
+            }
+        })
+}
+
+var generateEventTorrents = function(data) {
+    var recordings = data.recordings.filter(function (r) {
+        return r.mime_type === "video/webm";
+    })
+
+    if (! recordings.lenth) {
+        recordings = data.recordings.filter(function (r) {
+            return r.mime_type === "video/mp4";
+        })
     }
+
+    return recordings.reduce(function (a, r) {
+        var quality = r.height + 'p';
+        a[quality] = {
+            size: r.size * 1000000,
+            url: r.recording_url + '.torrent',
+            peers: 0,
+            seeds: 0
+        }
+        return a;
+    }, {})
 }
 
-var generateEventTorrents = function(event) {
-    return event
-}
-
-var formatEventForButter = function(event, idx) {
-    var date = moment(event.date);
+var formatEventForButter = function(event, idx, data) {
     return {
-        torrents: generateEventTorrents(event),
+        torrents: generateEventTorrents(data),
         watched: {
             watched: false,
         },
-        first_aired: date.unix(),
         date_based: false,
         overview: event.description,
+        synopsis: event.description,
         title: event.title,
         episode: idx,
-        season: 1,
+        season: event.season,
         tvdb_id: event.slug,
     }
+
 }
 
-var formatDetailForButter = function(bulk) {
-    var id = bulk.id,
-    data = bulk.data,
-    old_data = bulk.old_data;
+function getEventDate(event) {
+    if (event.date)
+        return event.date.split('T')[0];
+    return event.release_date;
+}
+
+function formatDetailsForButter(data) {
+    var events = data.raw_events;
+
+    var eventPromises = data.days.sort().reduce(function(a, d) {
+        var dayEvents = events.filter(function(e) {
+            return e.day === d
+        }).map(function(event, idx) {
+            var day = getEventDate(event);
+            event.season = data.days.indexOf(day) + 1;
+            console.log('day', day, event.season);
+            return deferRequest(URL + '/events/' + event.guid)
+                .then(function (data) {
+                    return formatEventForButter(event, idx, data)
+                })
+        })
+
+        return a.concat(dayEvents)
+    }, [])
 
     var updated = moment(data.updated)
-
-    var ret =  _.extend (old_data, {
-        synopsis: data.title,
-        country: "",
-        network: "CCC Media",
-        status: "finished",
-        num_seasons: 1,
-        runtime: 30,
-        last_updated: updated.unix(),
-        __v: 0,
-        genres: ["Event", "Conference"],
-        episodes: data.events.map(formatEventForButter)
-    })
-
-    console.error (ret)
-    return ret;
+    return Q.all(eventPromises)
+        .then(function(events) {
+            return {
+                synopsis: data.title,
+                country: "",
+                network: "CCC Media",
+                status: "finished",
+                runtime: 30,
+                last_updated: updated.unix(),
+                __v: 0,
+                episodes: events
+            }
+        })
 }
 
 // Single element query
 var queryTorrent = function (torrent_id, old_data, debug) {
-    return deferRequest(URL + '/conferences/' + old_data._id)
-        .then(function (data) {
-            return {
-                id: torrent_id,
-                data: data,
-                old_data: old_data
-            }
+    return formatDetailsForButter(old_data)
+        .then(function (new_data) {
+            return Object.assign(old_data, new_data)
         })
-};
-
-CCC.prototype.extractIds = function (items) {
-    return _.pluck(items.results, 'imdb_id');
 };
 
 CCC.prototype.fetch = function (filters) {
@@ -164,7 +213,6 @@ CCC.prototype.fetch = function (filters) {
 
 CCC.prototype.detail = function (torrent_id, old_data, debug) {
     return queryTorrent(torrent_id, old_data, debug)
-        .then(formatDetailForButter);
 };
 
 module.exports = CCC;

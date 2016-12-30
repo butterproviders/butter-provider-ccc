@@ -12,7 +12,7 @@ var URL = 'https://media.ccc.de/public';
 var CCC = function (args) {
     CCC.super_.call(this);
 
-    if (args.url)
+    if (args && args.url)
         URL = args.url;
 };
 

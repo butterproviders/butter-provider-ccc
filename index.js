@@ -88,7 +88,7 @@ var formatElementForButter = function (data) {
 };
 
 var formatForButter = function(data) {
-    console.log (data.map(formatElementForButter));
+    if (!data) return Q.reject("No Data !");
 
     return {
         results: data.map(formatElementForButter).reverse(),

@@ -122,18 +122,17 @@ var generateEventTorrents = function(data) {
         return r.mime_type === "video/webm";
     })
 
-    if (! recordings.lenth) {
+    if (recordings.lenth === 0) {
         recordings = data.recordings.filter(function (r) {
             return r.mime_type === "video/mp4";
         })
     }
 
     return recordings.reduce(function (a, r) {
-        var quality = r.height;
-        _.map(Provider.QualityType, function (v) {
-            return v;
-        }).reduce(function(a, c) {
-            return (Math.abs(quality - parseInt(a)) < Math.abs(quality - parseInt(c))) ? a : c;
+        var quality = Object.keys(Provider.QualityType).map(function(q){
+            return Provider.QualityType[q];
+        }).reduce(function(ret, c) {
+            return (Math.abs(r.height - parseInt(ret)) < Math.abs(r.height - parseInt(c))) ? ret : c;
         }, 0)
 
         a[quality] = {

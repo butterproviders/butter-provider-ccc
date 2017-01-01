@@ -12,7 +12,7 @@ var CCC = function (args) {
     CCC.super_.call(this);
 
     this.URL = 'https://media.ccc.de/public';
-    this.langs = ['en'];
+    this.langs = ['eng'];
     if (args && args.urlList)
         this.URL = args.urlList[0];
     if (args && args.langs)
@@ -184,7 +184,7 @@ CCC.prototype._formatDetailsForButter = function(data) {
         var dayEvents = events.filter(function(e) {
             return e.day === d
         }).filter(function(event) {
-            return (event.original_language in langs);
+            return (langs.indexOf(event.original_language) != -1);
         }).map(function(event, idx) {
             var day = getEventDate(event);
             event.season = data.days.indexOf(day) + 1;

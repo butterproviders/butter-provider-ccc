@@ -7,7 +7,8 @@
     "test": "tape ./node_modules/butter-provider/tests/*"
   },
   "butter": {
-    "timeout": 40000
+      "timeout": 40000,
+      "testArgs": "ccc?langs=[\"eng\"]&formats=[\"video/mp4\",\"video/webm\"]"
   },
   "repository": {
     "type": "git",

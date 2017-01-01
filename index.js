@@ -9,18 +9,9 @@ var _ = require('lodash');
 var moment = require('moment');
 
 var CCC = function (args) {
-    CCC.super_.call(this);
+    CCC.super_.call(this, args);
 
-    this.URL = 'https://media.ccc.de/public';
-    if (this.args.urlList)
-        this.URL = args.urlList[0];
-
-    this.formats = ['video/webm', 'video/mp4'];
-    if (this.args.formats)
-        this.URL = args.formats;
-
-    if (this.args.langs)
-        this.langs = args.langs;
+    this.URL = this.args.urlList[0];
 };
 
 inherits(CCC, Provider);
@@ -29,6 +20,10 @@ CCC.prototype.config = {
     name: 'ccc',
     uniqueId: 'imdb_id',
     tabName: 'CCC',
+    defaults: {
+        urlList: ['https://media.ccc.de/public'],
+        formats: ['video/webm', 'video/mp4']
+    },
     args: {
         urlList: Provider.ArgType.ARRAY,
         langs: Provider.ArgType.ARRAY,
@@ -183,8 +178,8 @@ function getEventDate(event) {
 CCC.prototype._formatDetailsForButter = function(data) {
     var events = data.raw_events;
     var URL = this.URL;
-    var langs = this.langs;
-    var formats = this.formats;
+    var langs = this.args.langs;
+    var formats = this.args.formats;
 
     var eventPromises = data.days.sort().reduce(function(a, d) {
         var dayEvents = events.filter(function(e) {

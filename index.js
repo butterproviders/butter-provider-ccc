@@ -84,7 +84,7 @@ var formatElementForButter = function (data) {
                     day: day
                 } )
             }).sort(function(a, b) {
-                return a.first_aired < b.first_aired;
+                return a.first_aired > b.first_aired;
             });
 
             days = Object.keys(days);

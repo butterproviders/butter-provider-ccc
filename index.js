@@ -8,12 +8,15 @@ var inherits = require('util').inherits;
 var _ = require('lodash');
 var moment = require('moment');
 
-var URL = 'https://media.ccc.de/public';
 var CCC = function (args) {
     CCC.super_.call(this);
 
-    if (args && args.url)
-        URL = args.url;
+    this.URL = 'https://media.ccc.de/public';
+    this.langs = ['en'];
+    if (args && args.urlList)
+        this.URL = args.urlList[0];
+    if (args && args.langs)
+        this.langs = args.langs;
 };
 
 inherits(CCC, Provider);
@@ -21,10 +24,14 @@ inherits(CCC, Provider);
 CCC.prototype.config = {
     name: 'ccc',
     uniqueId: 'imdb_id',
-    tabName: 'CCC'
+    tabName: 'CCC',
+    args: {
+        urlList: Provider.ArgType.ARRAY,
+        langs: Provider.ArgType.ARRAY
+    }
 };
 
-var queryTorrents = function (filters) {
+CCC.prototype._queryTorrents = function (filters) {
     var params = {};
     var genres = '';
     params.sort = 'seeds';
@@ -51,7 +58,7 @@ var queryTorrents = function (filters) {
         params.sort = filters.sorter;
     }
 
-    return deferRequest(URL + '/conferences')
+    return deferRequest(this.URL + '/conferences')
         .then(function (data) {
             return data.conferences
         })
@@ -168,12 +175,16 @@ function getEventDate(event) {
     return event.release_date;
 }
 
-function formatDetailsForButter(data) {
+CCC.prototype._formatDetailsForButter = function(data) {
     var events = data.raw_events;
+    var URL = this.URL;
+    var langs = this.langs;
 
     var eventPromises = data.days.sort().reduce(function(a, d) {
         var dayEvents = events.filter(function(e) {
             return e.day === d
+        }).filter(function(event) {
+            return (event.original_language in langs);
         }).map(function(event, idx) {
             var day = getEventDate(event);
             event.season = data.days.indexOf(day) + 1;
@@ -204,20 +215,16 @@ function formatDetailsForButter(data) {
 }
 
 // Single element query
-var queryTorrent = function (torrent_id, old_data, debug) {
-    return formatDetailsForButter(old_data)
+CCC.prototype.detail = function (torrent_id, old_data, debug) {
+    return this._formatDetailsForButter.apply(this, [old_data])
         .then(function (new_data) {
             return Object.assign(old_data, new_data)
         })
 };
 
 CCC.prototype.fetch = function (filters) {
-    return queryTorrents(filters)
+    return this._queryTorrents.apply(this, [filters])
         .then(formatForButter);
-};
-
-CCC.prototype.detail = function (torrent_id, old_data, debug) {
-    return queryTorrent(torrent_id, old_data, debug)
 };
 
 module.exports = CCC;

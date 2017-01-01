@@ -129,7 +129,13 @@ var generateEventTorrents = function(data) {
     }
 
     return recordings.reduce(function (a, r) {
-        var quality = r.height + 'p';
+        var quality = r.height;
+        _.map(Provider.QualityType, function (v) {
+            return v;
+        }).reduce(function(a, c) {
+            return (Math.abs(quality - parseInt(a)) < Math.abs(quality - parseInt(c))) ? a : c;
+        }, 0)
+
         a[quality] = {
             size: r.size * 1000000,
             url: r.recording_url + '.torrent',

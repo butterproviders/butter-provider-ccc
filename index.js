@@ -83,8 +83,6 @@ var formatElementForButter = function (data) {
                     first_aired: moment(event.date).unix(),
                     day: day
                 } )
-            }).sort(function(a, b) {
-                return a.first_aired > b.first_aired;
             });
 
             days = Object.keys(days);
@@ -188,6 +186,8 @@ CCC.prototype._formatDetailsForButter = function(data) {
             return e.day === d
         }).filter(function(event) {
             return langs?(langs.indexOf(event.original_language) != -1):true;
+        }).sort(function(a, b) {
+                return a.first_aired > b.first_aired;
         }).map(function(event, idx) {
             var day = getEventDate(event);
             event.season = data.days.indexOf(day) + 1;

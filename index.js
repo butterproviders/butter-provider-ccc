@@ -12,9 +12,14 @@ var CCC = function (args) {
     CCC.super_.call(this);
 
     this.URL = 'https://media.ccc.de/public';
-    if (args && args.urlList)
+    if (this.args.urlList)
         this.URL = args.urlList[0];
-    if (args && args.langs)
+
+    this.formats = ['video/webm', 'video/mp4'];
+    if (this.args.formats)
+        this.URL = args.formats;
+
+    if (this.args.langs)
         this.langs = args.langs;
 };
 
@@ -26,7 +31,8 @@ CCC.prototype.config = {
     tabName: 'CCC',
     args: {
         urlList: Provider.ArgType.ARRAY,
-        langs: Provider.ArgType.ARRAY
+        langs: Provider.ArgType.ARRAY,
+        formats: Provider.ArgType.ARRAY
     }
 };
 
@@ -123,16 +129,16 @@ var formatForButter = function(data) {
         })
 }
 
-var generateEventTorrents = function(data) {
-    var recordings = data.recordings.filter(function (r) {
-        return r.mime_type === "video/mp4";
-    })
+var generateEventTorrents = function(formats, data) {
+    var recordings = formats.reduce(function (a, f) {
+        if (a.length !== 0) {
+            return a;
+        }
 
-    if (recordings.lenth === 0) {
-        recordings = data.recordings.filter(function (r) {
-            return r.mime_type === "video/webm";
+        return data.recordings.filter(function (r) {
+            return r.mime_type === f;
         })
-    }
+    }, [])
 
     return recordings.reduce(function (a, r) {
         var quality = Object.keys(Provider.QualityType).map(function(q){
@@ -151,9 +157,9 @@ var generateEventTorrents = function(data) {
     }, {})
 }
 
-var formatEventForButter = function(event, idx, data) {
+var formatEventForButter = function(formats, event, idx, data) {
     return {
-        torrents: generateEventTorrents(data),
+        torrents: generateEventTorrents(formats, data),
         watched: {
             watched: false,
         },
@@ -178,6 +184,7 @@ CCC.prototype._formatDetailsForButter = function(data) {
     var events = data.raw_events;
     var URL = this.URL;
     var langs = this.langs;
+    var formats = this.formats;
 
     var eventPromises = data.days.sort().reduce(function(a, d) {
         var dayEvents = events.filter(function(e) {
@@ -190,7 +197,7 @@ CCC.prototype._formatDetailsForButter = function(data) {
             console.log('day', day, event.season);
             return deferRequest(URL + '/events/' + event.guid)
                 .then(function (data) {
-                    return formatEventForButter(event, idx, data)
+                    return formatEventForButter(formats, event, idx, data)
                 })
         })
 

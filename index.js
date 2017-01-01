@@ -119,12 +119,12 @@ var formatForButter = function(data) {
 
 var generateEventTorrents = function(data) {
     var recordings = data.recordings.filter(function (r) {
-        return r.mime_type === "video/webm";
+        return r.mime_type === "video/mp4";
     })
 
     if (recordings.lenth === 0) {
         recordings = data.recordings.filter(function (r) {
-            return r.mime_type === "video/mp4";
+            return r.mime_type === "video/webm";
         })
     }
 

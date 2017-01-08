@@ -7,8 +7,8 @@
     "test": "tape ./node_modules/butter-provider/tests/*"
   },
   "butter": {
-      "timeout": 40000,
-      "testArgs": "ccc?langs=[\"eng\"]&formats=[\"video/mp4\",\"video/webm\"]"
+    "timeout": 40000,
+    "testArgs": "ccc?langs=[\"eng\"]&formats=[\"video/mp4\",\"video/webm\"]"
   },
   "repository": {
     "type": "git",
@@ -28,9 +28,7 @@
   "dependencies": {
     "butter-provider": "^0.9.1",
     "defer-request": "^0.0.3",
-    "lodash": "^4.0.0",
-    "moment": "^2.11.1",
-    "q": "^1.4.1"
+    "moment": "^2.11.1"
   },
   "devDependencies": {
     "tape": "^4.6.3"

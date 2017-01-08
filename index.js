@@ -2,15 +2,12 @@
 
 var Provider = require('butter-provider');
 var querystring = require('querystring');
-var Q = require('q');
 var deferRequest = require('defer-request');
 var inherits = require('util').inherits;
-var _ = require('lodash');
 var moment = require('moment');
 
-var CCC = function (args) {
-    CCC.super_.call(this, args);
-
+var CCC = function () {
+    CCC.super_.apply(this, arguments);
     this.URL = this.args.urlList[0];
 };
 
@@ -68,6 +65,8 @@ CCC.prototype._queryTorrents = function (filters) {
 };
 
 var formatElementForButter = function (data) {
+    var langs = this.args.langs;
+
     var id = data.url.split('/').pop();
     var updated = moment(data.updated_at);
     var year = updated.year();
@@ -76,20 +75,28 @@ var formatElementForButter = function (data) {
         .then(function (conf) {
             var days = {}
 
-            var events = conf.events.map(function (event) {
-                var day = getEventDate(event);
-                days[day] = 1;
-                return Object.assign({}, event, {
-                    first_aired: moment(event.date).unix(),
-                    day: day
-                } )
-            });
+            var events =
+                conf.events
+                    .filter(function(event) {
+                        return langs?(langs.indexOf(event.original_language) != -1):true;
+                    }).map(function (event) {
+                        var day = getEventDate(event);
+                        days[day] = 1;
+                        return Object.assign({}, event, {
+                            first_aired: event.date ? moment(event.date).unix() : 0,
+                            day: day
+                        } )
+                    });
+
+            if (events.length === 0) {
+                return null
+            }
 
             days = Object.keys(days);
             return {
                 type: Provider.ItemType.TVSHOW,
                 _id: id,
-                imdb_id: 'ccc' +id,
+                imdb_id: 'ccc' + id,
                 tvdb_id: 'ccc-' + data.acronym,
                 title: data.title,
                 genres: ["Event", "Conference"],
@@ -113,9 +120,9 @@ var formatElementForButter = function (data) {
 };
 
 var formatForButter = function(data) {
-    if (!data) return Q.reject("No Data !");
+    if (!data) return Promise.reject("No Data !");
 
-    return Q.all(data.map(formatElementForButter))
+    return Promise.all(data.map(formatElementForButter.bind(this)).filter(d => d))
         .then(function (results) {
             return {
                 results: results,
@@ -159,6 +166,7 @@ var formatEventForButter = function(formats, event, idx, data) {
             watched: false,
         },
         date_based: false,
+        first_aired: event.first_aired,
         overview: event.description,
         synopsis: event.description,
         title: event.title,
@@ -177,21 +185,18 @@ function getEventDate(event) {
 
 CCC.prototype._formatDetailsForButter = function(data) {
     var events = data.raw_events;
+    delete data.raw_events;
     var URL = this.URL;
-    var langs = this.args.langs;
     var formats = this.args.formats;
 
     var eventPromises = data.days.sort().reduce(function(a, d) {
         var dayEvents = events.filter(function(e) {
             return e.day === d
-        }).filter(function(event) {
-            return langs?(langs.indexOf(event.original_language) != -1):true;
         }).sort(function(a, b) {
-                return a.first_aired > b.first_aired;
+            return a.first_aired > b.first_aired;
         }).map(function(event, idx) {
             var day = getEventDate(event);
             event.season = data.days.indexOf(day) + 1;
-            console.log('day', day, event.season);
             return deferRequest(URL + '/events/' + event.guid)
                 .then(function (data) {
                     return formatEventForButter(formats, event, idx, data)
@@ -202,32 +207,33 @@ CCC.prototype._formatDetailsForButter = function(data) {
     }, [])
 
     var updated = moment(data.updated)
-    return Q.all(eventPromises)
-        .then(function(events) {
-            return {
-                synopsis: data.title,
-                country: "",
-                network: "CCC Media",
-                status: "finished",
-                runtime: 30,
-                last_updated: updated.unix(),
-                __v: 0,
-                episodes: events
-            }
-        })
+    return Promise.all(eventPromises)
+                  .then(function(events) {
+                      console.log ('GOT EVENTS', events.length)
+                      return {
+                          synopsis: data.title,
+                          country: "",
+                          network: "CCC Media",
+                          status: "finished",
+                          runtime: 30,
+                          last_updated: updated.unix(),
+                          __v: 0,
+                          episodes: events
+                      }
+                  })
 }
 
 // Single element query
 CCC.prototype.detail = function (torrent_id, old_data, debug) {
     return this._formatDetailsForButter.apply(this, [old_data])
-        .then(function (new_data) {
-            return Object.assign(old_data, new_data)
-        })
+               .then(function (new_data) {
+                   return Object.assign(old_data, new_data)
+               })
 };
 
 CCC.prototype.fetch = function (filters) {
-    return this._queryTorrents.apply(this, [filters])
-        .then(formatForButter);
+    return this._queryTorrents.apply(this, [filters || {}])
+        .then(formatForButter.bind(this));
 };
 
 module.exports = CCC;

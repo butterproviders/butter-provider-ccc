@@ -1,6 +1,7 @@
 'use strict';
 
 var Provider = require('butter-provider');
+var CacheProvider = require('butter-cache-provider-nedb');
 var querystring = require('querystring');
 var deferRequest = require('defer-request');
 var inherits = require('util').inherits;
@@ -11,7 +12,7 @@ var CCC = function () {
     this.URL = this.args.urlList[0];
 };
 
-inherits(CCC, Provider);
+inherits(CCC, CacheProvider);
 
 CCC.prototype.config = {
     name: 'ccc',

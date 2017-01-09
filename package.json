@@ -26,7 +26,6 @@
   },
   "homepage": "https://github.com/butterproviders/butter-provider-ccc#readme",
   "dependencies": {
-    "butter-cache-provider-nedb": "git+https://github.com/butterproviders/butter-cache-provider-nedb.git",
     "butter-provider": "git+https://github.com/butterproviders/butter-provider.git",
     "defer-request": "^0.0.3",
     "moment": "^2.11.1"
